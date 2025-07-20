@@ -14,6 +14,7 @@
 #define RESET_PRESS_TIME 5000 // Button press time for reset (5 seconds)
 #define DO_PIN 0
 #define PH_PIN 1
+#define FLOW_SENSOR_PIN 25
 #define ROOM_TEMPERATURE_PIN 33
 #define WATER_TEMPERATURE_PIN 32
 
@@ -38,7 +39,7 @@ Config config(preferences);
 LCDManager lcd;
 WiFiManager wifiManager(lcd);
 WebServerManager webServerManager(config);
-SensorManager sensorManager(PH_PIN, DO_PIN, ROOM_TEMPERATURE_PIN, WATER_TEMPERATURE_PIN, preferences);
+SensorManager sensorManager(PH_PIN, DO_PIN, ROOM_TEMPERATURE_PIN, WATER_TEMPERATURE_PIN, FLOW_SENSOR_PIN, preferences);
 WebSocketsClient webSocket;
 
 // WebSocket connection state
@@ -199,6 +200,7 @@ void sendDataToCloud()
   doc["data"]["do"] = sensorManager.DO_value;
   doc["data"]["water_temperature"] = sensorManager.water_temperature;
   doc["data"]["room_temperature"] = sensorManager.room_temperature;
+  doc["data"]["flow_rate"] = sensorManager.flowRate;
   doc["data"]["uptime"] = millis() / 1000;         // Uptime in seconds
   doc["data"]["display"] = config.getActiveMenu(); // Current display mode
 

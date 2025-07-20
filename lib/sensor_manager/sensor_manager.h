@@ -19,7 +19,7 @@ static constexpr float DO_MAX_TEMP = 40.0f;
 class SensorManager
 {
 public:
-    SensorManager(uint8_t pH_pin, uint8_t DO_pin, uint8_t roomTemperaturePin, uint8_t waterTemperaturePin, Preferences &prf);
+    SensorManager(uint8_t pH_pin, uint8_t DO_pin, uint8_t roomTemperaturePin, uint8_t waterTemperaturePin, uint8_t flowSensorPin, Preferences &prf);
 
     void begin();
     void readSensors();
@@ -28,6 +28,7 @@ public:
 
     float pH_value, DO_value;                  // Store the float values for pH and DO
     float room_temperature, water_temperature; // Store the temperature value
+    float flowRate;
 
     float ph_voltage;
     float do_voltage;
@@ -46,17 +47,23 @@ private:
     uint16_t doCallibrationVoltage;
     uint16_t doCallibrationTemperature;
 
+    static volatile int flowPulseCount;
+
     float getDOValue();
     float getpHValue();
     void getTemperature();
 
     void doBegin();
+    void flowRateBegin();
 
     uint8_t pH_pin;
     uint8_t DO_pin;
+    uint8_t FLOW_SENSOR_PIN;
 
     float readDO();
     float readpH();
+    float readFlowRate();
+    static void pulseCounter();
 
     const uint16_t DO_Table[41] = {
         14460, 14220, 13820, 13440, 13090, 12740, 12420, 12110, 11810, 11530,

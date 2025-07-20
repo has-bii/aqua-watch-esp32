@@ -1,10 +1,14 @@
 #include <sensor_manager.h>
 
-SensorManager::SensorManager(uint8_t pH_pin, uint8_t DO_pin, uint8_t roomTemperaturePin, uint8_t waterTemperaturePin, Preferences &prf)
+// Define the static member variable
+volatile int SensorManager::flowPulseCount = 0;
+
+SensorManager::SensorManager(uint8_t pH_pin, uint8_t DO_pin, uint8_t roomTemperaturePin, uint8_t waterTemperaturePin, uint8_t flowSensorPin, Preferences &prf)
     : ads(), ph(prf), oneWireRoom(roomTemperaturePin), roomTemperature(&oneWireRoom), oneWireWater(waterTemperaturePin), waterTemperature(&oneWireWater), preferences(prf)
 {
     this->pH_pin = pH_pin;
     this->DO_pin = DO_pin;
+    this->FLOW_SENSOR_PIN = flowSensorPin;
 }
 
 void SensorManager::begin()
@@ -21,6 +25,8 @@ void SensorManager::begin()
     waterTemperature.begin(); // Initialize the water temperature sensor
 
     this->doBegin(); // Initialize the DO sensor calibration values
+
+    this->flowRateBegin(); // Initialize the flow rate sensor
 }
 
 // float SensorManager::readDO()
@@ -71,9 +77,10 @@ float SensorManager::readpH()
 
 void SensorManager::readSensors()
 {
-    getTemperature();          // Get the temperature values
-    this->DO_value = readDO(); // Read the DO value
-    this->pH_value = readpH(); // Read the pH value
+    getTemperature();                // Get the temperature values
+    this->DO_value = readDO();       // Read the DO value
+    this->pH_value = readpH();       // Read the pH
+    this->flowRate = readFlowRate(); // Read the flow rate
 }
 
 float SensorManager::getDOValue()
@@ -151,4 +158,28 @@ bool SensorManager::doCalibration(float current_temperature)
     this->preferences.end();
 
     return true;
+}
+
+void SensorManager::flowRateBegin()
+{
+    pinMode(FLOW_SENSOR_PIN, INPUT);
+    flowPulseCount = 0;
+    attachInterrupt(digitalPinToInterrupt(FLOW_SENSOR_PIN), pulseCounter, RISING);
+}
+
+void SensorManager::pulseCounter()
+{
+    flowPulseCount++; // Increment the pulse count
+}
+
+float SensorManager::readFlowRate()
+{
+    noInterrupts();
+    int flowRate = flowPulseCount;
+    flowPulseCount = 0; // Reset the pulse count
+    interrupts();
+
+    float flowRateLpm = (flowRate / 7.5f); // Convert pulse count to liters per minute
+
+    return flowRateLpm; // Return the flow rate in L/min
 }
