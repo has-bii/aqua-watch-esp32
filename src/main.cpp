@@ -14,6 +14,7 @@
 #define RESET_PRESS_TIME 5000 // Button press time for reset (5 seconds)
 #define DO_PIN 0
 #define PH_PIN 1
+#define TURBIDITY_PIN 2
 #define FLOW_SENSOR_PIN 25
 #define ROOM_TEMPERATURE_PIN 33
 #define WATER_TEMPERATURE_PIN 32
@@ -39,7 +40,7 @@ Config config(preferences);
 LCDManager lcd;
 WiFiManager wifiManager(lcd);
 WebServerManager webServerManager(config);
-SensorManager sensorManager(PH_PIN, DO_PIN, ROOM_TEMPERATURE_PIN, WATER_TEMPERATURE_PIN, FLOW_SENSOR_PIN, preferences);
+SensorManager sensorManager(PH_PIN, DO_PIN, ROOM_TEMPERATURE_PIN, WATER_TEMPERATURE_PIN, FLOW_SENSOR_PIN, TURBIDITY_PIN, preferences);
 WebSocketsClient webSocket;
 
 // WebSocket connection state
@@ -128,6 +129,17 @@ void updateDisplay()
     line1 = "DO voltage";
     line2 = String(sensorManager.do_voltage, 2) + " mV";
     break;
+
+  case 3:
+    line1 = "Flow rate";
+    line2 = String(sensorManager.flowRate, 2) + " L/min";
+    break;
+
+  case 4:
+    line1 = "Turbidity " + String(sensorManager.turbidity_voltage, 2) + "V";
+    line2 = String(sensorManager.turbidity, 2) + " NTU";
+    break;
+
   default:
     break;
   }
@@ -201,6 +213,7 @@ void sendDataToCloud()
   doc["data"]["water_temperature"] = sensorManager.water_temperature;
   doc["data"]["room_temperature"] = sensorManager.room_temperature;
   doc["data"]["flow_rate"] = sensorManager.flowRate;
+  doc["data"]["turbidity"] = sensorManager.turbidity;
   doc["data"]["uptime"] = millis() / 1000;         // Uptime in seconds
   doc["data"]["display"] = config.getActiveMenu(); // Current display mode
 
@@ -250,6 +263,12 @@ void handleIncomingMessage(uint8_t *payload, size_t length)
 
     sensorManager.doCalibration(temperature);
     lcd.print("DO Calibration", "Success", 1000);
+  }
+  else if (message = "calibrate-turbidity")
+  {
+    uint8_t mode = json["mode"] | 0;
+    bool success = sensorManager.turbidityCallibration(mode);
+    lcd.print("Turbidity Calibration", success ? "Success" : "Failed", 1000);
   }
   else
   {

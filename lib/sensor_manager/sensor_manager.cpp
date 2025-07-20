@@ -3,21 +3,22 @@
 // Define the static member variable
 volatile int SensorManager::flowPulseCount = 0;
 
-SensorManager::SensorManager(uint8_t pH_pin, uint8_t DO_pin, uint8_t roomTemperaturePin, uint8_t waterTemperaturePin, uint8_t flowSensorPin, Preferences &prf)
+SensorManager::SensorManager(uint8_t pH_pin, uint8_t DO_pin, uint8_t roomTemperaturePin, uint8_t waterTemperaturePin, uint8_t flowSensorPin, uint8_t turbidityPin, Preferences &prf)
     : ads(), ph(prf), oneWireRoom(roomTemperaturePin), roomTemperature(&oneWireRoom), oneWireWater(waterTemperaturePin), waterTemperature(&oneWireWater), preferences(prf)
 {
     this->pH_pin = pH_pin;
     this->DO_pin = DO_pin;
     this->FLOW_SENSOR_PIN = flowSensorPin;
+    this->TURBIDITY_PIN = turbidityPin;
 }
 
 void SensorManager::begin()
 {
     EEPROM.begin(32); // Initialize EEPROM with 32 bytes
 
-    Wire.begin();          // Initialize I2C communication
-    ads.begin();           // Initialize the ADS1115
-    ads.setGain(GAIN_ONE); // Set gain to 1
+    Wire.begin(); // Initialize I2C communication
+    ads.begin();  // Initialize the ADS1115
+    ads.setGain(GAIN_TWOTHIRDS);
 
     ph.begin(); // Initialize the pH sensor
 
@@ -28,15 +29,6 @@ void SensorManager::begin()
 
     this->flowRateBegin(); // Initialize the flow rate sensor
 }
-
-// float SensorManager::readDO()
-// {
-//     uint16_t rawADC = ads.readADC_SingleEnded(this->DO_pin); // Read the ADC value from the DO pin
-//     this->do_voltage = ads.computeVolts(rawADC) * 1000;      // Convert to millivolts
-
-//     uint16_t V_saturation = (uint32_t)doCallibrationVoltage + (uint32_t)35 * (uint8_t)water_temperature - (uint32_t)doCallibrationTemperature * 35;
-//     return (this->do_voltage * DO_Table[(uint8_t)water_temperature] / V_saturation) / 1000.0; // Calculate DO value (mg/L)
-// }
 
 float SensorManager::readDO()
 {
@@ -77,7 +69,8 @@ float SensorManager::readpH()
 
 void SensorManager::readSensors()
 {
-    getTemperature();                // Get the temperature values
+    getTemperature();                // Get the temperature
+    this->readTurbidity();           // Read the turbidity value
     this->DO_value = readDO();       // Read the DO value
     this->pH_value = readpH();       // Read the pH
     this->flowRate = readFlowRate(); // Read the flow rate
@@ -136,6 +129,14 @@ void SensorManager::doBegin()
     this->preferences.end();
 }
 
+void SensorManager::turbidityBegin()
+{
+    this->preferences.begin("turbidity_sensor", false);
+    this->turbidityZeroOffset = this->preferences.getUInt("turbidity_zero_offset", 2500);      // Default zero offset for turbidity
+    this->turbidtyHundredOffset = this->preferences.getUInt("turbidity_hundred_offset", 4100); // Default hundred offset for turbidity
+    this->preferences.end();
+}
+
 bool SensorManager::doCalibration(float current_temperature)
 {
     // Validate temperature range
@@ -160,6 +161,42 @@ bool SensorManager::doCalibration(float current_temperature)
     return true;
 }
 
+bool SensorManager::turbidityCallibration(uint8_t mode)
+{
+    switch (mode)
+    {
+    case 0:                                 // Reset calibration
+        this->turbidityZeroOffset = 2500;   // Default zero offset for turbidity
+        this->turbidtyHundredOffset = 4100; // Default hundred offset
+        this->preferences.begin("turbidity_sensor", false);
+        this->preferences.putUInt("turbidity_zero_offset", this->turbidityZeroOffset);
+        this->preferences.putUInt("turbidity_hundred_offset", this->turbidtyHundredOffset);
+        this->preferences.end();
+        return true; // Reset successful
+        break;
+    case 1: // Set zero offset
+    {
+        uint16_t rawADC = ads.readADC_SingleEnded(this->TURBIDITY_PIN);
+        this->turbidityZeroOffset = ads.computeVolts(rawADC) * 1000; // Read the current voltage and set as zero offset
+        this->preferences.begin("turbidity_sensor", false);
+        this->preferences.putUInt("turbidity_zero_offset", this->turbidityZeroOffset);
+        this->preferences.end();
+        return true;
+    }
+    case 2: // Set hundred offset
+    {
+        uint16_t rawADC = ads.readADC_SingleEnded(this->TURBIDITY_PIN);
+        this->turbidtyHundredOffset = ads.computeVolts(rawADC) * 1000; // Read the current voltage and set as hundred offset
+        this->preferences.begin("turbidity_sensor", false);
+        this->preferences.putUInt("turbidity_hundred_offset", this->turbidtyHundredOffset);
+        this->preferences.end();
+        return true;
+    }
+    default:
+        return false; // Invalid mode
+    }
+}
+
 void SensorManager::flowRateBegin()
 {
     pinMode(FLOW_SENSOR_PIN, INPUT);
@@ -182,4 +219,16 @@ float SensorManager::readFlowRate()
     float flowRateLpm = (flowRate / 7.5f); // Convert pulse count to liters per minute
 
     return flowRateLpm; // Return the flow rate in L/min
+}
+
+float SensorManager::readTurbidity()
+{
+    uint16_t rawADC = ads.readADC_SingleEnded(this->TURBIDITY_PIN); // Read the turbidity sensor value
+    this->turbidity_voltage = ads.computeVolts(rawADC) * 1000;      // Convert to millivolts
+
+    // Calculate turbidity using the zero and hundred offsets
+    this->turbidity = ((this->turbidity_voltage - this->turbidityZeroOffset) * 100.0f) / (this->turbidtyHundredOffset - this->turbidityZeroOffset);
+    this->turbidity = constrain(this->turbidity, 0.0f, 100.0f); // Ensure turbidity is within 0-100 NTU
+
+    return this->turbidity; // Return the turbidity value
 }
