@@ -71,14 +71,28 @@ void loop(void)
     everySecondTask(); // Read sensors and update display
   }
 
-  // Handle Network reconnection
-  static unsigned long timepointReconnect = millis();
-  if (millis() - timepointReconnect >= 30000U) // Every 30 seconds
+  // Handle WiFi reconnection
+  static unsigned long timepointWifiReconnect = millis();
+  if (millis() - timepointWifiReconnect >= 30000U) // Every 30 seconds
   {
-    timepointReconnect = millis();
+    timepointWifiReconnect = millis();
     if (!wifiManager.isConnected() && !wifiIsConnecting && config.isWifiConfigured())
     {
+      Serial.println("Attempting WiFi reconnection...");
       wifiManager.connect(config.getSSID().c_str(), config.getPasswordWifi().c_str(), &wifiIsConnecting);
+    }
+  }
+
+  // Handle WebSocket reconnection
+  if (millis() - lastWSReconnectAttempt >= WS_RECONNECT_INTERVAL)
+  {
+    lastWSReconnectAttempt = millis();
+
+    // Only attempt WebSocket reconnection if WiFi is connected but WebSocket is not
+    if (wifiManager.isConnected() && !wsConnected && config.isConfigured())
+    {
+      Serial.println("Attempting WebSocket reconnection...");
+      connectToWebSocket();
     }
   }
 }
