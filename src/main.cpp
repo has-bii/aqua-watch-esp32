@@ -243,7 +243,15 @@ void sendDataToCloud()
   doc["data"]["flow_rate"] = sensorManager.flowRate;
   doc["data"]["turbidity"] = sensorManager.turbidity;
   doc["data"]["uptime"] = millis() / 1000;         // Uptime in seconds
-  doc["data"]["display"] = config.getActiveMenu(); // Current display mode
+  doc["data"]["display"] = config.getActiveMenu(); // Current display
+
+  // Wifi information
+  doc["data"]["wifi"]["ssid"] = config.getSSID();
+  doc["data"]["wifi"]["ip"] = WiFi.localIP().toString();
+  doc["data"]["wifi"]["ip_gateway"] = WiFi.gatewayIP().toString();
+  doc["data"]["wifi"]["ip_subnet"] = WiFi.subnetMask().toString();
+  doc["data"]["wifi"]["ip_dns_1"] = WiFi.dnsIP(0).toString();
+  doc["data"]["wifi"]["ip_dns_2"] = WiFi.dnsIP(1).toString();
 
   // Serialize and send
   String message;

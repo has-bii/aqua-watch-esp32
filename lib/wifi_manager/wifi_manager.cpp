@@ -53,6 +53,16 @@ bool WiFiManager::isConnected()
 
 void WiFiManager::begin()
 {
+    // Set up static IP if needed
+    if (!WiFi.config(local_ip, gateway, subnet, primary_dns, secondary_dns))
+    {
+        lcd.print("Failed to set", "static IP", 1000);
+    }
+    else
+    {
+        lcd.print("Static IP set", local_ip.toString(), 1000);
+    }
+
     WiFi.mode(WIFI_AP_STA);
     WiFi.softAP("Aqua Watch");
 }
