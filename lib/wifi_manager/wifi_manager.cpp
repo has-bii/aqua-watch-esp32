@@ -31,6 +31,21 @@ void WiFiManager::connect(const char *ssid, const char *password)
     }
 }
 
+void WiFiManager::connect(const char *ssid, const char *password, bool *isConnecting)
+{
+    if (isConnecting)
+    {
+        *isConnecting = true;
+    }
+
+    connect(ssid, password);
+
+    if (isConnecting)
+    {
+        *isConnecting = false;
+    }
+}
+
 bool WiFiManager::isConnected()
 {
     return WiFi.status() == WL_CONNECTED;

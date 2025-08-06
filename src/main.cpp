@@ -46,7 +46,10 @@ WebSocketsClient webSocket;
 // WebSocket connection state
 bool wsConnected = false;
 unsigned long lastWSReconnectAttempt = 0;
-const unsigned long WS_RECONNECT_INTERVAL = 5000; // Try to reconnect every 5 seconds
+const unsigned long WS_RECONNECT_INTERVAL = 5000; // Try to reconnect every 5
+
+// Wifi connection state
+bool wifiIsConnecting = false;
 
 void setup(void)
 {
@@ -66,6 +69,17 @@ void loop(void)
   {
     timepoint = millis();
     everySecondTask(); // Read sensors and update display
+  }
+
+  // Handle Network reconnection
+  static unsigned long timepointReconnect = millis();
+  if (millis() - timepointReconnect >= 30000U) // Every 30 seconds
+  {
+    timepointReconnect = millis();
+    if (!wifiManager.isConnected() && !wifiIsConnecting && config.isWifiConfigured())
+    {
+      wifiManager.connect(config.getSSID().c_str(), config.getPasswordWifi().c_str(), &wifiIsConnecting);
+    }
   }
 }
 

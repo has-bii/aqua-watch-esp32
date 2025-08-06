@@ -15,5 +15,6 @@ public:
     WiFiManager(LCDManager &lcd);
     void begin();
     void connect(const char *ssid, const char *password);
+    void connect(const char *ssid, const char *password, bool *isConnecting);
     bool isConnected();
 };
