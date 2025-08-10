@@ -144,7 +144,7 @@ void updateDisplay()
   switch (config.getActiveMenu())
   {
   case 0:
-    line1 = String(sensorManager.water_temperature, 2) + "C " + String(sensorManager.room_temperature, 2) + "C";
+    line1 = String(sensorManager.water_temperature, 2) + "C " + String(sensorManager.flowRate, 2) + "L/min";
     line2 = "pH: " + String(sensorManager.pH_value, 2) + " DO: " + String(sensorManager.DO_value, 2);
     break;
 
