@@ -121,6 +121,7 @@ void setupNetwork()
     {
       if (config.isConfigured())
       {
+
         connectToWebSocket(); // Connect to WebSocket server if configured
       }
     }
@@ -245,13 +246,13 @@ void sendDataToCloud()
   doc["data"]["uptime"] = millis() / 1000;         // Uptime in seconds
   doc["data"]["display"] = config.getActiveMenu(); // Current display
 
-  // Wifi information
-  doc["data"]["wifi"]["ssid"] = config.getSSID();
-  doc["data"]["wifi"]["ip"] = WiFi.localIP().toString();
-  doc["data"]["wifi"]["ip_gateway"] = WiFi.gatewayIP().toString();
-  doc["data"]["wifi"]["ip_subnet"] = WiFi.subnetMask().toString();
-  doc["data"]["wifi"]["ip_dns_1"] = WiFi.dnsIP(0).toString();
-  doc["data"]["wifi"]["ip_dns_2"] = WiFi.dnsIP(1).toString();
+  // // Wifi information
+  // doc["data"]["wifi"]["ssid"] = config.getSSID();
+  // doc["data"]["wifi"]["ip"] = WiFi.localIP().toString();
+  // doc["data"]["wifi"]["ip_gateway"] = WiFi.gatewayIP().toString();
+  // doc["data"]["wifi"]["ip_subnet"] = WiFi.subnetMask().toString();
+  // doc["data"]["wifi"]["ip_dns_1"] = WiFi.dnsIP(0).toString();
+  // doc["data"]["wifi"]["ip_dns_2"] = WiFi.dnsIP(1).toString();
 
   // Serialize and send
   String message;
@@ -300,11 +301,23 @@ void handleIncomingMessage(uint8_t *payload, size_t length)
     sensorManager.doCalibration(temperature);
     lcd.print("DO Calibration", "Success", 1000);
   }
-  else if (message = "calibrate-turbidity")
+  else if (message == "calibrate-turbidity")
   {
     uint8_t mode = json["mode"] | 0;
     bool success = sensorManager.turbidityCallibration(mode);
     lcd.print("Turbidity Calibration", success ? "Success" : "Failed", 1000);
+  }
+  else if (message == "restart")
+  {
+    if (wsConnected)
+    {
+      webSocket.disconnect();
+      wsConnected = false;
+
+      // Restart the device
+      lcd.print("Restarting...", "", 1000);
+      ESP.restart();
+    }
   }
   else
   {

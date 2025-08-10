@@ -14,10 +14,10 @@ void LCDManager::print(const String &line1, const String &line2, unsigned long d
         lcd.setCursor(0, 1);
         lcd.print(line2);
     }
-    if (duration > 0)
-    {
-        delay(duration); // Wait for the specified duration before clearing the display
-    }
+    // if (duration > 0)
+    // {
+    //     delay(duration); // Wait for the specified duration before clearing the display
+    // }
 }
 
 void LCDManager::begin()
