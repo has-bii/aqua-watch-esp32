@@ -192,7 +192,7 @@ void connectToWebSocket()
   webSocket.setReconnectInterval(5000);
 
   // Enable heartbeat (ping every 15 seconds, expect pong within 3 seconds, disconnect after 2 missed pongs)
-  webSocket.enableHeartbeat(15000, 3000, 2);
+  // webSocket.enableHeartbeat(15000, 3000, 2);
 }
 
 void webSocketEvent(WStype_t type, uint8_t *payload, size_t length)

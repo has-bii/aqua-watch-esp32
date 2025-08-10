@@ -22,7 +22,7 @@ void SensorManager::begin()
 
     ph.begin(); // Initialize the pH sensor
 
-    roomTemperature.begin();  // Initialize the room temperature sensor
+    // roomTemperature.begin();  // Initialize the room temperature sensor
     waterTemperature.begin(); // Initialize the water temperature sensor
 
     this->doBegin(); // Initialize the DO sensor calibration values
@@ -114,10 +114,10 @@ bool SensorManager::phCallibration(uint8_t mode)
 
 void SensorManager::getTemperature()
 {
-    roomTemperature.requestTemperatures();
+    // roomTemperature.requestTemperatures();
     waterTemperature.requestTemperatures();
 
-    this->room_temperature = roomTemperature.getTempCByIndex(0);   // Get the room temperature
+    // this->room_temperature = roomTemperature.getTempCByIndex(0);   // Get the room temperature
     this->water_temperature = waterTemperature.getTempCByIndex(0); // Get the water temperature
 }
 
